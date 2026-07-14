@@ -264,7 +264,7 @@ class MenuScene extends Phaser.Scene {
         legGfx.fillStyle(0x141f25, 1); 
         legGfx.fillRect(4, 0, 10, 20);
         legGfx.fillStyle(0x5c3a21, 1); 
-        legGfx.fillRect(3, 20, 12, 40);
+        legGfx.fillRect(3, 20, 12, 20);
         legGfx.fillStyle(0x4a2c11, 1); 
         legGfx.fillRect(3, 28, 12, 4);
         legGfx.generateTexture('carlos_leg', 18, 40);
@@ -549,11 +549,11 @@ class MainGameScene extends Phaser.Scene {
         }
 
         let slashGfx = this.make.graphics({ x: 0, y: 0, add: false });
-        slashGfx.lineStyle(8, 0xff3333, 0.4);
+        slashGfx.lineStyle(8, 0xff3333, 0.4); // Base arc adjusted to red color
         slashGfx.beginPath();
         slashGfx.arc(16, 16, 12, Math.PI * 0.3, Math.PI * 1.7, true);
         slashGfx.strokePath();
-        slashGfx.lineStyle(3, 0xff0000, 1);
+        slashGfx.lineStyle(3, 0xff0000, 1); // Blade core adjusted to solid sharp red
         slashGfx.beginPath();
         slashGfx.arc(16, 16, 12, Math.PI * 0.35, Math.PI * 1.65, true);
         slashGfx.strokePath();
@@ -678,7 +678,10 @@ class MainGameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies, this.sceneryGroup);
 
         this.input.on('pointerdown', (pointer) => {
-            if (pointer.x > this.cameras.main.width - 100 && pointer.y < 80) return;
+            if (pointer.x > this.cameras.main.width - 100 && pointer.y < 80) {
+                return;
+            }
+
             if (this.gameIsPaused) return;
 
             let worldX = pointer.x + this.cameras.main.scrollX;
@@ -695,6 +698,7 @@ class MainGameScene extends Phaser.Scene {
             delay: 1500, 
             callback: () => {
                 if (this.gameIsPaused) return;
+
                 let angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
                 let x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * 600, 50, WORLD_SIZE - 50);
                 let y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * 600, 50, WORLD_SIZE - 50);
@@ -718,13 +722,16 @@ class MainGameScene extends Phaser.Scene {
 
         this.physics.add.overlap(this.projectiles, this.enemies, (bullet, enemy) => { 
             if (this.gameIsPaused) return;
+
             let dmg = bullet.damageValue !== undefined ? bullet.damageValue : 2;
             enemy.health -= dmg;
             
             if (bullet.isThunderShock) {
                 enemy.speedFactor = 0.3; 
                 enemy.setTint(0x3498db); 
+                
                 if (enemy.slowTimer) enemy.slowTimer.destroy();
+                
                 enemy.slowTimer = this.time.delayedCall(3500, () => {
                     if (enemy && enemy.active) {
                         enemy.speedFactor = 1.0;
@@ -733,6 +740,7 @@ class MainGameScene extends Phaser.Scene {
                 });
             }
 
+            // Explosion color checks character setup for red impact explosions
             let explosionColor = 0xffffff;
             if (selectedCharacter === 'Will') {
                 explosionColor = 0xff1111; 
@@ -753,7 +761,10 @@ class MainGameScene extends Phaser.Scene {
                 onComplete: () => { dmgText.destroy(); } 
             });
 
-            if (bullet.texture.key !== 'sword_slash_proj') bullet.destroy(); 
+            if (bullet.texture.key !== 'sword_slash_proj') {
+                bullet.destroy(); 
+            }
+
             if (enemy.health <= 0) {
                 this.gems.create(enemy.x, enemy.y, 'gemPic'); 
                 enemy.destroy(); 
@@ -762,9 +773,11 @@ class MainGameScene extends Phaser.Scene {
         
         this.physics.add.overlap(this.player, this.enemies, (p, enemy) => {
             if (this.gameIsPaused) return;
+
             if (!this.isInvincible) {
                 this.playerHealth--;
                 this.isInvincible = true;
+                
                 this.playerContainer.iterate((child) => { if (child.setTint) child.setTint(0xff3333); });
                 this.cameras.main.flash(120, 150, 0, 0);
 
@@ -773,13 +786,16 @@ class MainGameScene extends Phaser.Scene {
                     this.playerContainer.iterate((child) => { if (child.clearTint) child.clearTint(); });
                 });
 
-                if (this.playerHealth <= 0) this.scene.start('MenuScene'); 
+                if (this.playerHealth <= 0) {
+                    this.scene.start('MenuScene'); 
+                }
                 this.updateUIText();
             }
         }, null, this);
         
         this.physics.add.overlap(this.player, this.gems, (p, g) => {
             if (this.gameIsPaused) return;
+
             this.createExplosion(g.x, g.y, 0x54a0ff);
             g.destroy(); 
             this.score += 10; 
@@ -804,141 +820,626 @@ class MainGameScene extends Phaser.Scene {
 
         this.uiText = this.add.text(20, 20, '', { font: 'bold 20px Courier New', fill: '#f1c40f' }).setScrollFactor(0).setDepth(100);
         this.updateUIText();
+
+        this.slotText1 = this.add.text(0, 0, '1', { font: 'bold 11px Courier New', fill: '#f1c40f' }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+        this.slotText2 = this.add.text(0, 0, '2', { font: 'bold 11px Courier New', fill: '#f1c40f' }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+        this.slotLabel1 = this.add.text(0, 0, '', { font: '9px Geneva', fill: '#ffffff' }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
+        this.slotLabel2 = this.add.text(0, 0, '', { font: '9px Geneva', fill: '#ffffff' }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
+
+        this.gameIsPaused = false;
+        this.createPauseButtonUI();
+
+        this.scale.on('resize', this.resize, this);
     }
 
-    update(time, delta) {
-        if (this.gameIsPaused) return;
+    createPauseButtonUI() {
+        const screenWidth = this.cameras.main.width;
+        const screenHeight = this.cameras.main.height;
+        const midX = screenWidth / 2;
+        const midY = screenHeight / 2;
+        
+        this.pauseBtn = this.add.text(screenWidth - 60, 30, '║║', { font: 'bold 26px Courier New', fill: '#ffffff' })
+            .setScrollFactor(0)
+            .setDepth(150)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
 
-        this.player.setVelocity(0);
-        let vx = 0;
-        let vy = 0;
+        this.pauseBtn.on('pointerover', () => { this.pauseBtn.setStyle({ fill: '#f1c40f' }); });
+        this.pauseBtn.on('pointerout', () => { this.pauseBtn.setStyle({ fill: '#ffffff' }); });
+        this.pauseBtn.on('pointerdown', () => { this.togglePauseGame(); });
 
-        if (this.wasd.left.isDown) vx = -this.playerSpeed;
-        if (this.wasd.right.isDown) vx = this.playerSpeed;
-        if (this.wasd.up.isDown) vy = -this.playerSpeed;
-        if (this.wasd.down.isDown) vy = this.playerSpeed;
+        this.pauseBg = this.add.graphics()
+            .setScrollFactor(0)
+            .setDepth(180)
+            .setVisible(false);
+        this.pauseBg.fillStyle(0x000000, 0.85);
+        this.pauseBg.fillRect(0, 0, 5000, 5000);
 
-        this.player.setVelocity(vx, vy);
-        this.playerContainer.setPosition(this.player.x, this.player.y);
+        this.pauseTitle = this.add.text(midX, midY - 100, '— GAME PAUSED —', { font: 'bold 36px Georgia', fill: '#ffffff' })
+            .setScrollFactor(0)
+            .setDepth(190)
+            .setOrigin(0.5)
+            .setVisible(false);
 
-        // Simple walk animation logic
-        if (vx !== 0 || vy !== 0) {
-            let bob = Math.sin(time * 0.01) * 2;
-            this.playerHead.y = -28 + bob;
-            this.playerLeftLeg.angle = Math.sin(time * 0.01) * 20;
-            this.playerRightLeg.angle = -Math.sin(time * 0.01) * 20;
-        } else {
-            this.playerHead.y = -28;
-            this.playerLeftLeg.angle = 0;
-            this.playerRightLeg.angle = 0;
-        }
+        this.resumeBtn = this.add.text(midX, midY - 10, '[ RESUME GAME ]', { font: 'bold 22px Courier New', fill: '#2ecc71' })
+            .setScrollFactor(0)
+            .setDepth(190)
+            .setOrigin(0.5)
+            .setVisible(false)
+            .setInteractive({ useHandCursor: true });
 
-        // Face mouse direction
-        let mouseWorldX = this.pointer.x + this.cameras.main.scrollX;
-        if (mouseWorldX < this.player.x) {
-            this.playerContainer.setScale(-1, 1);
-        } else {
-            this.playerContainer.setScale(1, 1);
-        }
+        this.resumeBtn.on('pointerover', () => { this.resumeBtn.setStyle({ fill: '#ffffff' }); });
+        this.resumeBtn.on('pointerout', () => { this.resumeBtn.setStyle({ fill: '#2ecc71' }); });
+        this.resumeBtn.on('pointerdown', () => { this.togglePauseGame(); });
 
-        // AI Enemy logic chasing the player
-        this.enemies.getChildren().forEach((enemy) => {
-            let angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-            let speed = 120 * enemy.speedFactor;
-            enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+        this.quitBtn = this.add.text(midX, midY + 50, '[ QUIT TO MAIN MENU ]', { font: 'bold 22px Courier New', fill: '#e74c3c' })
+            .setScrollFactor(0)
+            .setDepth(190)
+            .setOrigin(0.5)
+            .setVisible(false)
+            .setInteractive({ useHandCursor: true });
+
+        this.quitBtn.on('pointerover', () => { this.quitBtn.setStyle({ fill: '#ffffff' }); });
+        this.quitBtn.on('pointerout', () => { this.quitBtn.setStyle({ fill: '#e74c3c' }); });
+        this.quitBtn.on('pointerdown', () => {
+            this.physics.resume();
+            this.scene.start('MenuScene');
         });
-
-        // Regen player mana
-        this.playerMana = Phaser.Math.Clamp(this.playerMana + this.manaRegenRate, 0, this.playerMaxMana);
-        this.updateUIText();
     }
 
-    triggerWillKatanaSwing(targetX, targetY) {
+    togglePauseGame() {
+        this.gameIsPaused = !this.gameIsPaused;
+
+        if (this.gameIsPaused) {
+            this.physics.pause();
+            this.tweens.pauseAll();
+            
+            const midX = this.cameras.main.width / 2;
+            const midY = this.cameras.main.height / 2;
+
+            this.pauseTitle.setPosition(midX, midY - 100);
+            this.resumeBtn.setPosition(midX, midY - 10);
+            this.quitBtn.setPosition(midX, midY + 50);
+
+            this.pauseBg.setVisible(true);
+            this.pauseTitle.setVisible(true);
+            this.resumeBtn.setVisible(true);
+            this.quitBtn.setVisible(true);
+            
+            this.pauseBtn.setText('▶'); 
+        } else {
+            this.physics.resume();
+            this.tweens.resumeAll();
+
+            this.pauseBg.setVisible(false);
+            this.pauseTitle.setVisible(false);
+            this.resumeBtn.setVisible(false);
+            this.quitBtn.setVisible(false);
+
+            this.pauseBtn.setText('║║'); 
+        }
+    }
+
+    triggerCarlosStaffCast(targetX, targetY) {
         if (this.isSwinging) return;
         this.isSwinging = true;
 
         this.tweens.add({
-            targets: this.heldKatana,
-            angle: { from: 45, to: -60 },
-            duration: 150,
-            yoyo: true,
-            onYoyo: () => {
-                let projectile = this.projectiles.create(this.player.x, this.player.y, 'sword_slash_proj');
-                projectile.damageValue = 3;
-                let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, targetX, targetY);
-                projectile.setAngle(Phaser.Math.RadToDeg(angle));
-                this.physics.velocityFromRotation(angle, 400, projectile.body.velocity);
-                
-                this.time.delayedCall(300, () => { if (projectile.active) projectile.destroy(); });
-            },
-            onComplete: () => {
-                this.heldKatana.angle = this.heldKatana.restingOffsetAngle;
-                this.isSwinging = false;
-            }
-        });
-    }
-
-    triggerCarlosStaffCast(targetX, targetY) {
-        if (this.playerMana < 6) return;
-        this.playerMana -= 6;
-
-        this.tweens.add({
             targets: this.heldStaff,
-            angle: { from: 20, to: -30 },
+            angle: this.heldStaff.angle - 35,
+            x: -2,
             duration: 100,
             yoyo: true,
-            onYoyo: () => {
-                let orb = this.projectiles.create(this.player.x, this.player.y, 'blue_magic_orb');
-                orb.damageValue = 4;
-                orb.isThunderShock = true;
+            hold: 50,
+            ease: 'Back.easeOut',
+            onStart: () => {
                 let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, targetX, targetY);
-                this.physics.velocityFromRotation(angle, 500, orb.body.velocity);
+                let magicOrb = this.projectiles.create(this.player.x + Math.cos(angle)*30, this.player.y + Math.sin(angle)*30, 'blue_magic_orb');
+                magicOrb.setDepth(12);
+                magicOrb.damageValue = 3;
+                
+                this.physics.velocityFromRotation(angle, 750, magicOrb.body.velocity);
+
+                let startX = this.player.x;
+                let startY = this.player.y;
+
+                this.time.addEvent({
+                    delay: 16,
+                    repeat: 45,
+                    callback: () => {
+                        if (magicOrb && magicOrb.active) {
+                            let distanceTravelled = Phaser.Math.Distance.Between(startX, startY, magicOrb.x, magicOrb.y);
+                            if (distanceTravelled >= 640) { 
+                                this.createExplosion(magicOrb.x, magicOrb.y, 0x3498db);
+                                magicOrb.destroy();
+                            }
+                        }
+                    }
+                });
             },
             onComplete: () => {
-                this.heldStaff.angle = this.heldStaff.restingOffsetAngle;
+                this.isSwinging = false;
+                this.heldStaff.x = 16;
             }
+        });
+
+        this.tweens.add({
+            targets: this.playerRightArm,
+            angle: -30,
+            duration: 90,
+            yoyo: true
         });
     }
 
-    createExplosion(x, y, color) {
-        for (let i = 0; i < 8; i++) {
-            let p = this.add.image(x, y, 'particle').setTint(color).setDepth(20);
-            this.physics.add.existing(p);
-            let angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            let speed = Phaser.Math.Between(50, 150);
-            p.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+    triggerWillKatanaSwing(targetX, targetY) {
+        if (selectedCharacter !== 'Will' || this.isSwinging) {
+            return;
+        }
+        this.isSwinging = true;
+
+        this.tweens.add({
+            targets: this.heldKatana,
+            angle: this.heldKatana.angle - 140, 
+            x: -6,
+            duration: 80,
+            yoyo: true, 
+            hold: 30,
+            ease: 'Back.easeOut',
+            onStart: () => {
+                let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, targetX, targetY);
+                let slashArc = this.projectiles.create(this.player.x + Math.cos(angle)*35, this.player.y + Math.sin(angle)*35, 'sword_slash_proj');
+                slashArc.setScale(1.7).setTint(0xff3333).setDepth(12); // Base basic attack slash set to solid red tint
+                slashArc.damageValue = 4;
+                
+                this.physics.velocityFromRotation(angle, 1400, slashArc.body.velocity);
+                slashArc.setRotation(angle + Math.PI / 2);
+
+                let startX = this.player.x;
+                let startY = this.player.y;
+                this.time.addEvent({
+                    delay: 16,
+                    repeat: 30,
+                    callback: () => {
+                        if (slashArc && slashArc.active) {
+                            let distanceTravelled = Phaser.Math.Distance.Between(startX, startY, slashArc.x, slashArc.y);
+                            if (distanceTravelled >= 640) { 
+                                slashArc.destroy();
+                            }
+                        }
+                    }
+                });
+            },
+            onComplete: () => {
+                this.isSwinging = false;
+                this.heldKatana.x = 16;
+            }
+        });
+
+        this.tweens.add({
+            targets: this.playerRightArm,
+            angle: -90,
+            duration: 70,
+            yoyo: true
+        });
+    }
+
+    castSlot1Ability() {
+        if (this.slot1CooldownActive) return;
+
+        if (selectedCharacter === 'Will') {
+            if (this.playerMana < 5) return;
+            this.playerMana -= 5;
+            this.slot1CooldownActive = true;
+            this.slot1CooldownTimer = 5000; 
+
+            let worldMouseX = this.pointer.x + this.cameras.main.scrollX;
+            let worldMouseY = this.pointer.y + this.cameras.main.scrollY;
+            let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, worldMouseX, worldMouseY);
+
+            let slash = this.projectiles.create(this.player.x, this.player.y, 'sword_slash_proj');
+            slash.setScale(2.2).setTint(0xff0000); // Modified Ability [1] Sword Slash projectile tint to crimson red
+            slash.damageValue = 15; 
+            
+            this.physics.velocityFromRotation(angle, 600, slash.body.velocity);
+            slash.setRotation(angle + Math.PI / 2);
+
+            let startX = this.player.x;
+            let startY = this.player.y;
+            
+            this.time.addEvent({
+                delay: 16,
+                repeat: 90,
+                callback: () => {
+                    if (slash && slash.active) {
+                        let dist = Phaser.Math.Distance.Between(startX, startY, slash.x, slash.y);
+                        if (dist >= 880) { 
+                            this.createExplosion(slash.x, slash.y, 0xff1111); // Updated pop burst to red
+                            slash.destroy();
+                        }
+                    }
+                }
+            });
+        } else {
+            if (this.playerMana < 6) return;
+            this.playerMana -= 6;
+            this.slot1CooldownActive = true;
+            this.slot1CooldownTimer = 800; 
+
+            let worldMouseX = this.pointer.x + this.cameras.main.scrollX;
+            let worldMouseY = this.pointer.y + this.cameras.main.scrollY;
+            let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, worldMouseX, worldMouseY);
+
             this.tweens.add({
-                targets: p,
-                alpha: 0,
-                duration: Phaser.Math.Between(300, 600),
-                onComplete: () => { p.destroy(); }
+                targets: this.heldStaff,
+                angle: this.heldStaff.angle - 40,
+                duration: 80,
+                yoyo: true
+            });
+
+            let bolt = this.projectiles.create(this.player.x, this.player.y, 'thunder_bolt_proj');
+            bolt.setScale(1.5).setDepth(12);
+            bolt.damageValue = 4;
+            bolt.isThunderShock = true; 
+
+            this.physics.velocityFromRotation(angle, 1100, bolt.body.velocity);
+            bolt.setRotation(angle);
+
+            let startX = this.player.x;
+            let startY = this.player.y;
+
+            this.time.addEvent({
+                delay: 16,
+                repeat: 60,
+                callback: () => {
+                    if (bolt && bolt.active) {
+                        let dist = Phaser.Math.Distance.Between(startX, startY, bolt.x, bolt.y);
+                        if (dist >= 960) { 
+                            this.createExplosion(bolt.x, bolt.y, 0xf1c40f);
+                            bolt.destroy();
+                        }
+                    }
+                }
             });
         }
     }
 
-    updateUIText() {
-        if (this.uiText) {
-            this.uiText.setText(
-                `CHARACTER: ${selectedCharacter}\n` +
-                `HP: ${this.playerHealth}/${this.playerMaxHealth}\n` +
-                `MANA: ${Math.floor(this.playerMana)}/${this.playerMaxMana}\n` +
-                `LEVEL: ${this.playerLevel} (XP: ${this.playerXP}/${this.xpNeeded})\n` +
-                `SCORE: ${this.score}`
-            );
+    castSlot2Ability() {
+        if (this.slot2CooldownActive) return;
+
+        if (selectedCharacter === 'Will') {
+            if (this.playerMana <= 0) return;
+            this.playerMana = 0;
+            this.slot2CooldownActive = true;
+            this.slot2CooldownTimer = 45000; 
+            this.manaSlowingActive = true;
+            this.manaRegenRate = this.baseManaRegen * 0.15;
+
+            let worldMouseX = this.pointer.x + this.cameras.main.scrollX;
+            let worldMouseY = this.pointer.y + this.cameras.main.scrollY;
+            let facingAngle = Phaser.Math.Angle.Between(this.player.x, this.player.y, worldMouseX, worldMouseY);
+
+            let targetX = this.player.x + Math.cos(facingAngle) * 100;
+            let targetY = this.player.y + Math.sin(facingAngle) * 100;
+
+            let katana = this.add.image(targetX, targetY - 400, 'divine_katana').setScale(4).setAlpha(0).setDepth(50);
+            katana.rotation = facingAngle + Math.PI / 4; 
+            katana.setTint(0xff3333); // Katana asset tinted red for the giant drop sequence
+
+            this.tweens.add({
+                targets: katana,
+                y: targetY,
+                alpha: 1,
+                duration: 400,
+                ease: 'Expo.easeIn',
+                onComplete: () => {
+                    this.cameras.main.shake(600, 0.025);
+                    this.cameras.main.flash(200, 255, 50, 50); // Screenshake flash color converted to intense red aura
+
+                    let explRing = this.add.graphics().setDepth(49);
+                    explRing.fillStyle(0xff1111, 0.8); // Radial shockwave ring shifted to red
+                    explRing.fillCircle(targetX, targetY, 10);
+                    
+                    this.tweens.add({
+                        targets: explRing,
+                        scaleX: 120,
+                        scaleY: 120,
+                        alpha: 0,
+                        duration: 700,
+                        ease: 'Sine.easeOut',
+                        onComplete: () => { explRing.destroy(); }
+                    });
+
+                    let victims = this.enemies.getChildren().slice();
+                    victims.forEach((enemy) => {
+                        this.createExplosion(enemy.x, enemy.y, 0xff1111); // Victims explode in deep red mist particles
+                        this.gems.create(enemy.x, enemy.y, 'gemPic'); 
+                        this.score += 10;
+                        enemy.destroy();
+                    });
+
+                    katana.destroy();
+                }
+            });
+        } else {
+            if (this.playerMana < 40) return; 
+            this.playerMana = 0;
+            this.slot2CooldownActive = true;
+            this.slot2CooldownTimer = 14000; 
+
+            this.cameras.main.flash(150, 174, 214, 241);
+
+            this.tweens.add({
+                targets: this.heldStaff,
+                angle: '+=180',
+                duration: 400,
+                yoyo: true
+            });
+
+            const strikeRadius = 350;
+            const strikeCount = 12;
+
+            for (let i = 0; i < strikeCount; i++) {
+                this.time.delayedCall(i * 120, () => {
+                    let rx = this.player.x + Phaser.Math.Between(-strikeRadius, strikeRadius);
+                    let ry = this.player.y + Phaser.Math.Between(-strikeRadius, strikeRadius);
+
+                    let strikeLine = this.add.graphics().setDepth(15);
+                    strikeLine.lineStyle(5, 0xffffff, 1);
+                    strikeLine.beginPath();
+                    strikeLine.moveTo(rx - 30, ry - 500); 
+                    strikeLine.lineTo(rx + 15, ry - 200);
+                    strikeLine.lineTo(rx - 10, ry - 100);
+                    strikeLine.lineTo(rx, ry);
+                    strikeLine.strokePath();
+
+                    strikeLine.lineStyle(2, 0xf1c40f, 0.8);
+                    strikeLine.strokePath();
+
+                    this.cameras.main.shake(100, 0.004);
+
+                    let victims = this.enemies.getChildren().slice();
+                    victims.forEach((enemy) => {
+                        let dist = Phaser.Math.Distance.Between(rx, ry, enemy.x, enemy.y);
+                        if (dist <= 120) {
+                            enemy.health -= 12; 
+                            this.createExplosion(enemy.x, enemy.y, 0xf1c40f);
+                            if (enemy.health <= 0) {
+                                this.gems.create(enemy.x, enemy.y, 'gemPic');
+                                this.score += 10;
+                                enemy.destroy();
+                            }
+                        }
+                    });
+
+                    this.tweens.add({
+                        targets: strikeLine,
+                        alpha: 0,
+                        duration: 150,
+                        onComplete: () => { strikeLine.destroy(); }
+                    });
+                });
+            }
         }
+    }
+
+    updateUIText() {
+        let status = this.manaSlowingActive ? " [BURNT]" : "";
+        this.uiText.setText(`CHARACTER: ${selectedCharacter}\nLVL: ${this.playerLevel}\nXP: ${this.playerXP}/${this.xpNeeded}\nScore: ${this.score}\nMANA STATE:${status}`);
+    }
+
+    drawScreenBars() {
+        this.uiBarsGraphic.clear();
+        
+        const screenWidth = this.cameras.main.width;
+        const screenHeight = this.cameras.main.height;
+        const midX = screenWidth / 2;
+
+        let barWidth = 460;     
+        let barHeight = 22;     
+        let startX = midX - (barWidth / 2); 
+        
+        let hpY = screenHeight - 150;
+        let manaY = screenHeight - 120;
+        let slotY = screenHeight - 88;
+
+        let slotSize = 50;      
+        let slot1X = midX - 110; 
+        let slot2X = midX + 60;
+
+        if (this.slotText1 && this.slotText2) {
+            this.slotText1.setPosition(slot1X + 5, slotY + 4);
+            this.slotText2.setPosition(slot2X + 5, slotY + 4);
+        }
+
+        if (this.slotLabel1 && this.slotLabel2) {
+            this.slotLabel1.setPosition(slot1X + (slotSize / 2), slotY + slotSize + 4);
+            this.slotLabel1.setText(selectedCharacter === 'Will' ? 'S.Slash' : 'T.Shock');
+            
+            this.slotLabel2.setPosition(slot2X + (slotSize / 2), slotY + slotSize + 4);
+            this.slotLabel2.setText(selectedCharacter === 'Will' ? 'Divine' : 'T.Wave');
+        }
+
+        this.uiBarsGraphic.fillStyle(0x220000, 1); 
+        this.uiBarsGraphic.fillRect(startX, hpY, barWidth, barHeight);
+        let hpPct = Phaser.Math.Clamp(this.playerHealth / this.playerMaxHealth, 0, 1);
+        this.uiBarsGraphic.fillStyle(0xe74c3c, 1); 
+        this.uiBarsGraphic.fillRect(startX, hpY, barWidth * hpPct, barHeight);
+        
+        this.uiBarsGraphic.fillStyle(0x000c22, 1); 
+        this.uiBarsGraphic.fillRect(startX, manaY, barWidth, barHeight);
+        let manaPct = Phaser.Math.Clamp(this.playerMana / this.playerMaxMana, 0, 1);
+        
+        this.uiBarsGraphic.fillStyle(this.manaSlowingActive ? 0x6c3483 : 0x2980b9, 1); 
+        this.uiBarsGraphic.fillRect(startX, manaY, barWidth * manaPct, barHeight);
+
+        this.uiBarsGraphic.lineStyle(3, 0x444444, 1);
+        this.uiBarsGraphic.strokeRect(startX, hpY, barWidth, barHeight);
+        this.uiBarsGraphic.strokeRect(startX, manaY, barWidth, barHeight);
+
+        this.uiBarsGraphic.lineStyle(3, 0xcc9e00, 1); 
+        this.uiBarsGraphic.strokeRect(slot1X, slotY, slotSize, slotSize);
+        this.uiBarsGraphic.strokeRect(slot2X, slotY, slotSize, slotSize);
+
+        if (this.slot1CooldownActive) {
+            let pct = this.slot1CooldownTimer / this.slot1CooldownDuration;
+            this.uiBarsGraphic.fillStyle(0x000000, 0.7);
+            this.uiBarsGraphic.fillRect(slot1X, slotY + (slotSize * (1 - pct)), slotSize, slotSize * pct);
+        }
+
+        if (this.slot2CooldownActive) {
+            let pct = this.slot2CooldownTimer / this.slot2CooldownDuration;
+            this.uiBarsGraphic.fillStyle(0x78281f, 0.75); 
+            this.uiBarsGraphic.fillRect(slot2X, slotY + (slotSize * (1 - pct)), slotSize, slotSize * pct);
+        }
+    }
+
+    createExplosion(x, y, color) {
+        for (let i = 0; i < 6; i++) {
+            let p = this.add.image(x, y, 'particle').setTint(color).setDepth(20);
+            this.physics.add.existing(p);
+            let angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            let speed = Phaser.Math.Between(120, 220);
+            p.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+            this.time.delayedCall(250, () => { p.destroy(); });
+        }
+    }
+
+    resize(gameSize) {
+        this.cameras.main.setSize(gameSize.width, gameSize.height);
+        
+        if (this.pauseBtn) {
+            this.pauseBtn.setPosition(gameSize.width - 60, 30);
+        }
+        
+        if (this.resumeBtn && this.quitBtn && this.pauseTitle) {
+            const midX = gameSize.width / 2;
+            const midY = gameSize.height / 2;
+            this.pauseTitle.setPosition(midX, midY - 100);
+            this.resumeBtn.setPosition(midX, midY - 10);
+            this.quitBtn.setPosition(midX, midY + 50);
+        }
+    }
+
+    update(time, delta) {
+        if (this.gameIsPaused) return; 
+
+        if (this.slot1CooldownActive) {
+            this.slot1CooldownTimer -= delta;
+            if (this.slot1CooldownTimer <= 0) {
+                this.slot1CooldownActive = false;
+            }
+        }
+
+        if (this.slot2CooldownActive) {
+            this.slot2CooldownTimer -= delta;
+            if (this.slot2CooldownTimer <= 0) {
+                this.slot2CooldownActive = false;
+                if (selectedCharacter === 'Will') {
+                    this.manaSlowingActive = false;
+                    this.manaRegenRate = this.baseManaRegen; 
+                }
+                this.updateUIText();
+            }
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.hotkeys.slot1)) {
+            this.castSlot1Ability();
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.hotkeys.slot2)) {
+            this.castSlot2Ability();
+        }
+
+        if (this.playerMana < this.playerMaxMana) {
+            this.playerMana = Phaser.Math.Clamp(this.playerMana + this.manaRegenRate, 0, this.playerMaxMana);
+        }
+
+        this.player.body.setVelocity(0);
+        let moving = false;
+        
+        if (this.wasd.left.isDown) { 
+            this.player.body.setVelocityX(-this.playerSpeed); 
+            moving = true; 
+        } else if (this.wasd.right.isDown) { 
+            this.player.body.setVelocityX(this.playerSpeed); 
+            moving = true; 
+        }
+        
+        if (this.wasd.up.isDown) { 
+            this.player.body.setVelocityY(-this.playerSpeed); 
+            moving = true; 
+        } else if (this.wasd.down.isDown) { 
+            this.player.body.setVelocityY(this.playerSpeed); 
+            moving = true; 
+        }
+
+        this.playerContainer.setPosition(this.player.x, this.player.y);
+        this.playerContainer.rotation = 0;
+
+        if (moving) {
+            let walkCycle = Math.sin(time * 0.015);
+            this.playerLeftLeg.angle = walkCycle * 25;
+            this.playerRightLeg.angle = -walkCycle * 25;
+            
+            this.playerLeftArm.angle = -walkCycle * 15;
+            if (!this.isSwinging) {
+                this.playerRightArm.angle = walkCycle * 15;
+            }
+
+            this.playerHead.y = -28 + Math.abs(Math.sin(time * 0.03)) * 3;
+            this.playerTorso.y = -6 + Math.abs(Math.sin(time * 0.03)) * 2;
+        } else {
+            let breathe = Math.sin(time * 0.003);
+            this.playerLeftLeg.angle = 0;
+            this.playerRightLeg.angle = 0;
+            this.playerLeftArm.angle = breathe * 4;
+            if (!this.isSwinging) {
+                this.playerRightArm.angle = -breathe * 4;
+            }
+            this.playerHead.y = -28 + breathe * 1.5;
+        }
+
+        if (!this.isSwinging) {
+            if (selectedCharacter === 'Will') {
+                this.heldKatana.angle = this.heldKatana.restingOffsetAngle + Math.sin(time * 0.01) * 8;
+            } else {
+                this.heldStaff.angle = this.heldStaff.restingOffsetAngle + Math.sin(time * 0.01) * 4;
+            }
+        }
+
+        this.enemies.getChildren().forEach((e) => { 
+            let baseSpeed = 70;
+            let currentSpeed = baseSpeed * (e.speedFactor !== undefined ? e.speedFactor : 1.0);
+            this.physics.moveToObject(e, this.player, currentSpeed); 
+            e.rotation = 0; 
+        });
+        
+        this.gems.getChildren().forEach((g) => { 
+            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, g.x, g.y) < 160) {
+                this.physics.moveToObject(g, this.player, 320); 
+            } else {
+                g.body.setVelocity(0, 0); 
+            }
+        });
+        
+        this.drawScreenBars();
     }
 }
 
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
     parent: 'game-container',
-    backgroundColor: '#0d0d11',
-    physics: {
-        default: 'arcade',
-        arcade: { gravity: { y: 0 }, debug: false }
+    render: {
+        pixelArt: true, 
+        antialias: false
     },
+    scale: {
+        mode: Phaser.Scale.RESIZE, 
+        width: '100%',
+        height: '100%'
+    },
+    physics: { default: 'arcade' },
     scene: [MenuScene, CustomizeScene, MainGameScene]
 };
+
 const game = new Phaser.Game(config);
