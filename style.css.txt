@@ -1,0 +1,35 @@
+/* Reset margins, paddings, and eliminate scrolls for full-screen arcade view */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #0d0d11; /* Sleek, dark void background matching the dungeon */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Container settings for absolute full-screen scaling */
+#game-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Prevent text selection and cursor glitches inside the canvas */
+canvas {
+    display: block;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.85);
+    image-rendering: pixelated; /* Keeps pixel textures crisp and sharp */
+    user-select: none;
+    -webkit-user-select: none;
+}
